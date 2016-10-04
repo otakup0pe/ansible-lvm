@@ -1,0 +1,10 @@
+lvm_encfs: []
+# - name: foo
+#   mnt: /bar
+#   size: '1G'
+#   vg: asd
+#   key: asdd
+lvm_plain: []
+lvm_crypt_suffix: 'crypto'
+lvm_key_source: "{{dotfiles}}"
+lvm_key_dest: "/var/cache/ansible-lvm"

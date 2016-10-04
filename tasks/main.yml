@@ -1,0 +1,12 @@
+- file:
+    path: "{{lvm_key_dest}}"
+    state: directory
+    mode: 0400
+    owner: root
+    group: root
+- lvg:
+    state: present
+    vg: "{{vg}}"
+    pvs: "{{pv}}"
+- include: "encfs.yml"
+- include: "plain.yml"
