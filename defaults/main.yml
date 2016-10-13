@@ -8,3 +8,4 @@ lvm_plain: []
 lvm_crypt_suffix: 'crypto'
 lvm_key_source: "{{dotfiles}}"
 lvm_key_dest: "/var/cache/ansible-lvm"
+lvm_default_mnt_prefix: "/mnt"

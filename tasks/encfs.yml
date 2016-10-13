@@ -1,6 +1,6 @@
 ---
 - name: "check if mounted first"
-  shell: "mount | grep /mnt/{{item.mnt}}"
+  shell: "mount | grep {{item.mnt_prefix|default(lvm_default_mnt_prefix)}}/{{item.mnt}}"
   register: mnt_check
   ignore_errors: true
   changed_when: false
@@ -61,11 +61,11 @@
   with_items: "{{fs_check.results}}"
 - name: "ensure directory exists"
   file:
-    path: "/mnt/{{item.mnt}}"
+    path: "{{item.mnt_prefix|default(lvm_default_mnt_prefix)}}/{{item.mnt}}"
     state: directory
   with_items: "{{lvm_encfs}}"
 - name: "mount"
-  shell: "mount /dev/mapper/{{item.item.mnt}} /mnt/{{item.item.mnt}}"
+  shell: "mount /dev/mapper/{{item.item.mnt}} {{item.mnt_prefix|default(lvm_default_mnt_prefix)}}/{{item.item.mnt}}"
   when: item.rc == 1
   with_items: "{{mnt_check.results}}"
 - name: "remove keys"
