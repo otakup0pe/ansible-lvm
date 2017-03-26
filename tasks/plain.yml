@@ -1,40 +1,39 @@
 - name: "check if mounted first"
-  shell: "mount | grep {{item.mnt_prefix|default(lvm_default_mnt_prefix)}}/{{item.mnt}}"
+  shell: "grep -e ' {{item.mnt_prefix|default(lvm_default_mnt_prefix)}}/{{item.mnt}} ' /proc/mounts"
   register: mnt_check
   ignore_errors: true
   changed_when: false
   with_items: "{{lvm_plain}}"
 - name: "check for volume group"
   shell: "vgscan | grep {{vg}}"
-  when: item.rc == 1
+  when: "{{item.rc}} == 1"
   with_items: "{{mnt_check.results}}"
 - name: "check for logical volume"
   shell: "test -e /dev/{{vg}}/{{item.item.mnt}}"
   register: lv_check
-  when: item.rc == 1
+  when: "{{item.rc}} == 1"
   ignore_errors: true
   with_items: "{{mnt_check.results}}"
 - name: "create logical volume"
   shell: "lvcreate -n {{item.item.item.mnt}} -L {{item.item.item.size}} {{vg}}"
-  when: not item.skipped|default(False) and item.rc == 1 and item.item.rc == 1
+  when: "not item.skipped|default(False) and item.rc|default('') == 1 and item.item.rc|default('') == 1"
   with_items: "{{lv_check.results}}"
 - name: "check for fs"
   shell: "file -sL /dev/{{vg}}/{{item.item.mnt}} | grep ext4"
   register: fs_check
   ignore_errors: true
   changed_when: false
-  when: item.rc == 1
+  when: "{{item.rc}} == 1"
   with_items: "{{mnt_check.results}}"
 - name: "create filesystem"
   command: "mkfs.ext4 /dev/{{vg}}/{{item.item.item.mnt}}"
-  when: not item.skipped|default(False) and item.rc == 1 and item.item.rc == 1
+  when: "not item.skipped|default(False) and item.rc|default('') == 1 and item.item.rc|default('') == 1"
   with_items: "{{fs_check.results}}"
-- name: "ensure directory exists"
-  file:
-    path: "{{item.mnt_prefix|default(lvm_default_mnt_prefix)}}/{{item.mnt}}"
-    state: directory
-  with_items: "{{lvm_plain}}"
-- name: "mount"
-  shell: "mount /dev/{{vg}}/{{item.item.mnt}} {{item.item.mnt_prefix|default(lvm_default_mnt_prefix)}}/{{item.item.mnt}}"
-  when: item.rc == 1
+- name: "mount logical volume"
+  mount:
+    src: "/dev/{{vg}}/{{item.item.mnt}}"
+    name: "{{item.item.mnt_prefix|default(lvm_default_mnt_prefix)}}/{{item.item.mnt}}"
+    fstype: "ext4"
+    state: "mounted"
+  when: "item.rc|default('') == 1"
   with_items: "{{mnt_check.results}}"
