@@ -1,3 +1,4 @@
+---
 - file:
     path: "{{lvm_key_dest}}"
     state: directory

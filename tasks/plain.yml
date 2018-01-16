@@ -1,3 +1,4 @@
+---
 - name: "check if mounted first"
   shell: "grep -e ' {{item.mnt_prefix|default(lvm_default_mnt_prefix)}}/{{item.mnt}} ' /proc/mounts"
   register: mnt_check
