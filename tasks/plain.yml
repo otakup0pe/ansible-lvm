@@ -7,12 +7,12 @@
   with_items: "{{lvm_plain}}"
 - name: "check for volume group"
   shell: "vgscan | grep {{vg}}"
-  when: "{{item.rc}} == 1"
+  when: "item.rc == 1"
   with_items: "{{mnt_check.results}}"
 - name: "check for logical volume"
   shell: "test -e /dev/{{vg}}/{{item.item.mnt}}"
   register: lv_check
-  when: "{{item.rc}} == 1"
+  when: "item.rc == 1"
   ignore_errors: true
   with_items: "{{mnt_check.results}}"
 - name: "create logical volume"
@@ -24,7 +24,7 @@
   register: fs_check
   ignore_errors: true
   changed_when: false
-  when: "{{item.rc}} == 1"
+  when: "item.rc == 1"
   with_items: "{{mnt_check.results}}"
 - name: "create filesystem"
   command: "mkfs.ext4 /dev/{{vg}}/{{item.item.item.mnt}}"
