@@ -1,15 +1,19 @@
 ---
 - name: "check if mounted first"
-  shell: "mount | grep {{item.mnt_prefix|default(lvm_default_mnt_prefix)}}/{{item.mnt}}"
+  shell: >
+    mount | \
+    grep {{item.mnt_prefix|default(lvm_default_mnt_prefix)}}/{{item.mnt}}
   register: mnt_check
   ignore_errors: true
   changed_when: false
   with_items: "{{lvm_encfs}}"
+
 - name: "check for volume group"
   shell: "vgscan | grep {{vg}}"
   changed_when: false
   when: "item.rc == 1"
   with_items: "{{mnt_check.results}}"
+
 - name: "check for encrypted logical volume"
   shell: "lvscan | grep {{item.item.mnt}}-{{lvm_crypt_suffix}}"
   register: crypto_lv_check
@@ -17,17 +21,27 @@
   changed_when: false
   when: "item.rc == 1"
   with_items: "{{mnt_check.results}}"
+
 - name: "create crypto logical volume"
-  shell: "lvcreate -n {{item.item.item.mnt}}-{{lvm_crypt_suffix}} -L {{item.item.item.size}} {{vg}}"
-  when: "not item.skipped|default(False) and item.rc|default('') == 1 and item.item.rc|default('') == 1"
+  shell:
+    lvcreate -n {{item.item.item.mnt}}-{{lvm_crypt_suffix}} \
+    -L {{item.item.item.size}} {{vg}}
+  when: >
+    not item.skipped|default(False)
+    and item.rc|default('') == 1
+    and item.item.rc|default('') == 1
   with_items: "{{crypto_lv_check.results}}"
+
 - name: "check for luks"
-  command: "cryptsetup isLuks /dev/{{vg}}/{{item.item.mnt}}-{{lvm_crypt_suffix}}"
+  command: >
+    cryptsetup isLuks
+    /dev/{{vg}}/{{item.item.mnt}}-{{lvm_crypt_suffix}}
   register: luks_check
   ignore_errors: true
   when: "item.rc == 1"
   changed_when: false
   with_items: "{{mnt_check.results}}"
+
 - name: "copy key"
   copy:
     src: "{{lvm_key_source}}/{{item.item.key}}.key"
@@ -35,20 +49,36 @@
     mode: "0600"
   when: "item.rc == 1"
   with_items: "{{mnt_check.results}}"
+
 - name: "luks format"
-  command: "cryptsetup -q luksFormat /dev/{{vg}}/{{item.item.item.mnt}}-{{lvm_crypt_suffix}} {{lvm_key_dest}}/{{item.item.item.key}}"
-  when: "not item.skipped|default(False) and item.rc|default('') == 1 and item.item.rc|default('') == 1"
+  command: >
+    cryptsetup -q luksFormat \
+    /dev/{{vg}}/{{item.item.item.mnt}}-{{lvm_crypt_suffix}} \
+    {{lvm_key_dest}}/{{item.item.item.key}}
+  when: >
+    not item.skipped|default(False)
+    and item.rc|default('') == 1
+    and item.item.rc|default('') == 1
   with_items: "{{luks_check.results}}"
+
 - name: "check for logical volume"
   shell: "test -e /dev/mapper/{{item.item.mnt}}"
   register: lv_check
   when: "item.rc|default('') == 1"
   ignore_errors: true
   with_items: "{{mnt_check.results}}"
+
 - name: "luks open"
-  command: "cryptsetup -d {{lvm_key_dest}}/{{item.item.item.key}} luksOpen /dev/{{vg}}/{{item.item.item.mnt}}-{{lvm_crypt_suffix}} {{item.item.item.mnt}}"
-  when: "not {{item.skipped|default(False)}} and item.rc == 1 and item.item.rc== 1"
+  command: >
+    cryptsetup -d {{lvm_key_dest}}/{{item.item.item.key}} \
+    luksOpen /dev/{{vg}}/{{item.item.item.mnt}}-{{lvm_crypt_suffix}} \
+    {{item.item.item.mnt}}
+  when: >
+    not item.skipped|default(False)
+    and item.rc == 1
+    and item.item.rc== 1
   with_items: "{{lv_check.results}}"
+
 - name: "check for fs"
   shell: "file -sL /dev/mapper/{{item.item.mnt}} | grep ext4"
   register: fs_check
@@ -56,19 +86,25 @@
   changed_when: false
   when: "item.rc == 1"
   with_items: "{{mnt_check.results}}"
+
 - name: "create filesystem"
   command: "mkfs.ext4 /dev/mapper/{{item.item.item.mnt}}"
   when: "not item.skipped|default(False) and item.rc== 1 and item.item.rc== 1"
   with_items: "{{fs_check.results}}"
+
 - name: "ensure directory exists"
   file:
     path: "{{item.mnt_prefix|default(lvm_default_mnt_prefix)}}/{{item.mnt}}"
     state: directory
   with_items: "{{lvm_encfs}}"
+
 - name: "mount encrypted filesystem"
-  shell: "mount /dev/mapper/{{item.item.mnt}} {{item.item.mnt_prefix|default(lvm_default_mnt_prefix)}}/{{item.item.mnt}}"
+  shell: >
+    mount /dev/mapper/{{item.item.mnt}} \
+    {{item.item.mnt_prefix|default(lvm_default_mnt_prefix)}}/{{item.item.mnt}}
   when: "item.rc == 1"
   with_items: "{{mnt_check.results}}"
+
 - name: "remove keys"
   file:
     path: "{{lvm_key_dest}}/{{item.key}}"

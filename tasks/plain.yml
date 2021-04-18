@@ -5,20 +5,24 @@
   ignore_errors: true
   changed_when: false
   with_items: "{{lvm_plain}}"
+
 - name: "check for volume group"
   shell: "vgscan | grep {{vg}}"
   when: "item.rc == 1"
   with_items: "{{mnt_check.results}}"
+
 - name: "check for logical volume"
   shell: "test -e /dev/{{vg}}/{{item.item.mnt}}"
   register: lv_check
   when: "item.rc == 1"
   ignore_errors: true
   with_items: "{{mnt_check.results}}"
+
 - name: "create logical volume"
   shell: "lvcreate -n {{item.item.item.mnt}} -L {{item.item.item.size}} {{vg}}"
   when: "not item.skipped|default(False) and item.rc|default('') == 1 and item.item.rc|default('') == 1"
   with_items: "{{lv_check.results}}"
+
 - name: "check for fs"
   shell: "file -sL /dev/{{vg}}/{{item.item.mnt}} | grep ext4"
   register: fs_check
@@ -26,10 +30,12 @@
   changed_when: false
   when: "item.rc == 1"
   with_items: "{{mnt_check.results}}"
+
 - name: "create filesystem"
   command: "mkfs.ext4 /dev/{{vg}}/{{item.item.item.mnt}}"
   when: "not item.skipped|default(False) and item.rc|default('') == 1 and item.item.rc|default('') == 1"
   with_items: "{{fs_check.results}}"
+
 - name: "mount logical volume"
   mount:
     src: "/dev/{{vg}}/{{item.item.mnt}}"

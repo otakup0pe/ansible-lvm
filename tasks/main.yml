@@ -1,13 +1,17 @@
 ---
-- file:
+- name: "create key file location"
+  file:
     path: "{{lvm_key_dest}}"
-    state: directory
-    mode: 0400
-    owner: root
-    group: root
-- lvg:
-    state: present
+    state: "directory"
+    mode: "0400"
+    owner: "root"
+    group: "root"
+
+- name: "create volume group and associate physical volumes"
+  lvg:
+    state: "present"
     vg: "{{vg}}"
     pvs: "{{pv}}"
+
 - include: "encfs.yml"
 - include: "plain.yml"

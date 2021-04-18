@@ -1,3 +1,4 @@
+---
 lvm_encfs: []
 # - name: foo
 #   mnt: /bar
