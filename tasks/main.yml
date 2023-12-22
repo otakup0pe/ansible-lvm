@@ -13,5 +13,6 @@
     vg: "{{vg}}"
     pvs: "{{pv}}"
 
-- include: "encfs.yml"
-- include: "plain.yml"
+- include_tasks: "encfs.yml"
+
+- include_tasks: "plain.yml"
