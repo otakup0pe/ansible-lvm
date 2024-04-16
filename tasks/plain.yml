@@ -40,15 +40,14 @@
     size: "{{item.size}}G"
     vg: "{{vg}}"
     shrink: false
-    resizefs: false
   loop: "{{lvm_plain}}"
 
 - name: "ensure fs"
   filesystem:
-    dev: "/dev/{{vg}}/{{item.item.mnt}}"
+    dev: "/dev/{{vg}}/{{item.mnt}}"
     fstype: "ext4"
-  loop: "{{mnt_check.results}}"
-  when: item.failed_when_result
+    resizefs: true
+  loop: "{{lvm_plain}}"
 
 - name: "mount plain filesystem"
   mount:

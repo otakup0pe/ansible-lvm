@@ -24,7 +24,7 @@
   loop: "{{lvm_encfs}}"
   failed_when: >-
     item.mnt + '-' + lvm_crypt_suffix in ansible_lvm['lvs'] and
-    (ansible_lvm['lvs'][item.mnt + '-' + lvm_crypt_suffix]['size_g'])|float
+    ansible_lvm['lvs'][item.mnt + '-' + lvm_crypt_suffix]['size_g']|float
       > item.size|float
 
 - name: "cannot change volume group"
@@ -41,7 +41,6 @@
     size: "{{item.size}}G"
     vg: "{{vg}}"
     shrink: false
-    resizefs: false
   loop: "{{lvm_encfs}}"
 
 - name: "copy keys"
@@ -61,12 +60,22 @@
   loop: "{{mnt_check.results}}"
   when: item.failed_when_result
 
+- name: "resize luks if needed"
+  shell: >-
+    cryptsetup resize
+    --key-file={{lvm_key_dest}}/{{item.key}}.key {{item.mnt}}
+  loop: "{{lvm_encfs}}"
+  when: >-
+    item.mnt + '-' + lvm_crypt_suffix in ansible_lvm['lvs']
+    and item.size|float != (ansible_lvm['lvs']
+      [item.mnt + '-' + lvm_crypt_suffix]['size_g'])|float
+
 - name: "ensure fs"
   filesystem:
-    dev: "/dev/mapper/{{item.item.mnt}}"
+    dev: "/dev/mapper/{{item.mnt}}"
     fstype: "ext4"
-  loop: "{{mnt_check.results}}"
-  when: item.failed_when_result
+    resizefs: true
+  loop: "{{lvm_encfs}}"
 
 - name: "ensure directory exists"
   file:
