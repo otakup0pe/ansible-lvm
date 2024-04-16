@@ -45,7 +45,7 @@
 
 - name: "ensure fs"
   filesystem:
-    dev: "/dev/mapper/{{vg}}-{{item.item.mnt}}"
+    dev: "/dev/{{vg}}/{{item.item.mnt}}"
     fstype: "ext4"
   loop: "{{mnt_check.results}}"
   when: item.failed_when_result
@@ -55,6 +55,6 @@
     boot: false
     fstype: "ext4"
     path: "{{item.item.mnt_prefix|default(lvm_default_mnt_prefix)}}/{{item.item.mnt}}"
-    src: "/dev/mapper/{{vg}}-{{item.item.mnt}}"
+    src: "/dev/{{vg}}/{{item.item.mnt}}"
     state: "mounted"
   loop: "{{mnt_check.results}}"
