@@ -50,6 +50,7 @@
     mode: "0600"
   when: item.failed_when_result
   loop: "{{mnt_check.results}}"
+  no_log: true
 
 - name: "manage luks"
   luks_device:
@@ -85,7 +86,6 @@
 
 - name: "mount encrypted filesystem"
   mount:
-    boot: false
     fstype: "ext4"
     path: "{{item.item.mnt_prefix|default(lvm_default_mnt_prefix)}}/{{item.item.mnt}}"
     src: "/dev/mapper/{{item.item.mnt}}"
