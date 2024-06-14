@@ -87,7 +87,8 @@
 - name: "mount encrypted filesystem"
   mount:
     fstype: "ext4"
-    path: "{{item.item.mnt_prefix|default(lvm_default_mnt_prefix)}}/{{item.item.mnt}}"
+    path: "{{item.item.mnt_prefix|default(lvm_default_mnt_prefix)}}\
+    /{{item.item.mnt}}"
     src: "/dev/mapper/{{item.item.mnt}}"
     state: "mounted"
   loop: "{{mnt_check.results}}"
