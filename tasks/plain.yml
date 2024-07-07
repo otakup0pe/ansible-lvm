@@ -1,5 +1,5 @@
 ---
-- name: "check vol  var structure"
+- name: "check plain var structure"
   fail:
     msg: "{{item.mnt}} is missing something"
   loop: "{{lvm_plain}}"

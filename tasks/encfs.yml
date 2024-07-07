@@ -1,7 +1,7 @@
 ---
-- name: "check fs structure"
+- name: "check encrypted var structure"
   fail:
-    msg: "{{item.mnt}} is missing something"
+    msg: "repo {{item.mnt}} var is incomplete"
   loop: "{{lvm_encfs}}"
   failed_when: >-
     item.key|default('') == '' or
