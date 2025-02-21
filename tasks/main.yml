@@ -12,6 +12,7 @@
     state: "present"
     vg: "{{vg}}"
     pvs: "{{pv}}"
+  when: pv|default('') != ''
 
 - include_tasks: "encfs.yml"
 
