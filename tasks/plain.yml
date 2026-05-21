@@ -14,7 +14,7 @@
   ignore_errors: true
   changed_when: false
   failed_when: >-
-    '/mnt/' + item.mnt not in ansible_mounts | map(attribute='mount')
+    '/mnt/' + item.mnt not in ansible_facts['mounts'] | map(attribute='mount')
   loop: "{{lvm_plain}}"
 
 - name: "no shrink only grow"
@@ -22,16 +22,16 @@
     msg: "checking sizes of {{item.mnt}}"
   loop: "{{lvm_plain}}"
   failed_when: >-
-    item.mnt in ansible_lvm['lvs'] and
-    (ansible_lvm['lvs'][item.mnt]['size_g'])|float
+    item.mnt in ansible_facts['lvm']['lvs'] and
+    (ansible_facts['lvm']['lvs'][item.mnt]['size_g'])|float
       > item.size|float
 
 - name: "cannot change volume group"
   fail:
     msg: "checking volume gruop for {{item.mnt}}"
   failed_when: >-
-    item.mnt in ansible_lvm['lvs'] and
-    ansible_lvm['lvs'][item.mnt]['vg'] != vg
+    item.mnt in ansible_facts['lvm']['lvs'] and
+    ansible_facts['lvm']['lvs'][item.mnt]['vg'] != vg
   loop: "{{lvm_plain}}"
 
 - name: "ensure plain logical volume"

@@ -15,7 +15,7 @@
   ignore_errors: true
   changed_when: false
   failed_when: >-
-    '/mnt/' + item.mnt not in ansible_mounts | map(attribute='mount')
+    '/mnt/' + item.mnt not in ansible_facts['mounts'] | map(attribute='mount')
   loop: "{{lvm_encfs}}"
 
 - name: "no shrink only grow"
@@ -23,16 +23,16 @@
     msg: "checking sizes of {{item.mnt}}"
   loop: "{{lvm_encfs}}"
   failed_when: >-
-    item.mnt + '-' + lvm_crypt_suffix in ansible_lvm['lvs'] and
-    ansible_lvm['lvs'][item.mnt + '-' + lvm_crypt_suffix]['size_g']|float
+    item.mnt + '-' + lvm_crypt_suffix in ansible_facts['lvm']['lvs'] and
+    ansible_facts['lvm']['lvs'][item.mnt + '-' + lvm_crypt_suffix]['size_g']|float
       > item.size|float
 
 - name: "cannot change volume group"
   fail:
     msg: "checking volume gruop for {{item.mnt}}"
   failed_when: >-
-    item.mnt + '-' + lvm_crypt_suffix in ansible_lvm['lvs'] and
-    ansible_lvm['lvs'][item.mnt + '-' + lvm_crypt_suffix]['vg'] != vg
+    item.mnt + '-' + lvm_crypt_suffix in ansible_facts['lvm']['lvs'] and
+    ansible_facts['lvm']['lvs'][item.mnt + '-' + lvm_crypt_suffix]['vg'] != vg
   loop: "{{lvm_encfs}}"
 
 - name: "ensure crypto logical volume"
@@ -67,8 +67,8 @@
     --key-file={{lvm_key_dest}}/{{item.key}}.key {{item.mnt}}
   loop: "{{lvm_encfs}}"
   when: >-
-    item.mnt + '-' + lvm_crypt_suffix in ansible_lvm['lvs']
-    and item.size|float != (ansible_lvm['lvs']
+    item.mnt + '-' + lvm_crypt_suffix in ansible_facts['lvm']['lvs']
+    and item.size|float != (ansible_facts['lvm']['lvs']
       [item.mnt + '-' + lvm_crypt_suffix]['size_g'])|float
 
 - name: "ensure fs"
