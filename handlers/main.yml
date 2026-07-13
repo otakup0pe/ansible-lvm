@@ -1,0 +1,4 @@
+---
+- name: "reload systemd for lvm metrics"
+  systemd:
+    daemon_reload: true

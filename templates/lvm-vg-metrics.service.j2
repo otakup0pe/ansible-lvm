@@ -1,0 +1,8 @@
+# {{ ansible_managed }}
+[Unit]
+Description=LVM volume-group free-space prometheus textfile collector
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart={{ lvm_metrics_script_dest }} {{ lvm_metrics_textfile_dir }}

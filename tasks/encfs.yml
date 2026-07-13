@@ -1,14 +1,16 @@
 ---
-- name: "check encrypted var structure"
+- name: "validate encrypted volume definition"
   fail:
     msg: "repo {{item.mnt}} var is incomplete"
   loop: "{{lvm_encfs}}"
+  loop_control:
+    label: "volume - {{item.mnt}}"
   failed_when: >-
     item.key|default('') == '' or
     item.size|default('') == '' or
     item.size|float == 0
 
-- name: "check if mounted first"
+- name: "check whether encrypted volume is already mounted"
   fail:
     msg: "{{item.mnt}} not mounted"
   register: mnt_check
@@ -17,33 +19,41 @@
   failed_when: >-
     '/mnt/' + item.mnt not in ansible_facts['mounts'] | map(attribute='mount')
   loop: "{{lvm_encfs}}"
+  loop_control:
+    label: "volume - {{item.mnt}}"
 
-- name: "no shrink only grow"
+- name: "refuse to shrink an existing encrypted volume"
   fail:
     msg: "checking sizes of {{item.mnt}}"
   loop: "{{lvm_encfs}}"
+  loop_control:
+    label: "volume - {{item.mnt}}"
   failed_when: >-
     item.mnt + '-' + lvm_crypt_suffix in ansible_facts['lvm']['lvs'] and
     ansible_facts['lvm']['lvs'][item.mnt + '-' + lvm_crypt_suffix]['size_g']|float
       > item.size|float
 
-- name: "cannot change volume group"
+- name: "refuse to move an encrypted volume between volume groups"
   fail:
-    msg: "checking volume gruop for {{item.mnt}}"
+    msg: "checking volume group for {{item.mnt}}"
   failed_when: >-
     item.mnt + '-' + lvm_crypt_suffix in ansible_facts['lvm']['lvs'] and
     ansible_facts['lvm']['lvs'][item.mnt + '-' + lvm_crypt_suffix]['vg'] != vg
   loop: "{{lvm_encfs}}"
+  loop_control:
+    label: "volume - {{item.mnt}}"
 
-- name: "ensure crypto logical volume"
+- name: "ensure encrypted logical volume"
   lvol:
     lv: "{{item.mnt}}-{{lvm_crypt_suffix}}"
     size: "{{item.size}}G"
     vg: "{{vg}}"
     shrink: false
   loop: "{{lvm_encfs}}"
+  loop_control:
+    label: "volume - {{item.mnt}}"
 
-- name: "copy keys"
+- name: "copy luks key for encrypted volume"
   copy:
     src: "{{lvm_key_source}}/{{item.item.key}}.key"
     dest: "{{lvm_key_dest}}/{{item.item.key}}"
@@ -51,8 +61,10 @@
   when: item.failed_when_result
   loop: "{{mnt_check.results}}"
   no_log: true
+  loop_control:
+    label: "volume - {{item.item.mnt}}"
 
-- name: "manage luks"
+- name: "open luks device for encrypted volume"
   luks_device:
     device: "/dev/{{vg}}/{{item.item.mnt}}-{{lvm_crypt_suffix}}"
     keyfile: "{{lvm_key_dest}}/{{item.item.key}}"
@@ -60,29 +72,37 @@
     state: "opened"
   loop: "{{mnt_check.results}}"
   when: item.failed_when_result
+  loop_control:
+    label: "volume - {{item.item.mnt}}"
 
 - name: "resize luks if needed"
   shell: >-
     cryptsetup resize
     --key-file={{lvm_key_dest}}/{{item.key}}.key {{item.mnt}}
   loop: "{{lvm_encfs}}"
+  loop_control:
+    label: "volume - {{item.mnt}}"
   when: >-
     item.mnt + '-' + lvm_crypt_suffix in ansible_facts['lvm']['lvs']
     and item.size|float != (ansible_facts['lvm']['lvs']
       [item.mnt + '-' + lvm_crypt_suffix]['size_g'])|float
 
-- name: "ensure fs"
+- name: "ensure ext4 filesystem on encrypted volume"
   filesystem:
     dev: "/dev/mapper/{{item.mnt}}"
     fstype: "ext4"
     resizefs: true
   loop: "{{lvm_encfs}}"
+  loop_control:
+    label: "volume - {{item.mnt}}"
 
-- name: "ensure directory exists"
+- name: "ensure encrypted volume mount point exists"
   file:
     path: "{{item.mnt_prefix|default(lvm_default_mnt_prefix)}}/{{item.mnt}}"
     state: directory
   with_items: "{{lvm_encfs}}"
+  loop_control:
+    label: "volume - {{item.mnt}}"
 
 - name: "mount encrypted filesystem"
   mount:
@@ -92,9 +112,13 @@
     src: "/dev/mapper/{{item.item.mnt}}"
     state: "mounted"
   loop: "{{mnt_check.results}}"
+  loop_control:
+    label: "volume - {{item.item.mnt}}"
 
-- name: "remove keys"
+- name: "remove luks key from disk"
   file:
     path: "{{lvm_key_dest}}/{{item.key}}"
     state: absent
   loop: "{{lvm_encfs}}"
+  loop_control:
+    label: "volume - {{item.mnt}}"

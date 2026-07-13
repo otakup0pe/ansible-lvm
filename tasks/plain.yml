@@ -1,13 +1,15 @@
 ---
-- name: "check plain var structure"
+- name: "validate plain volume definition"
   fail:
     msg: "{{item.mnt}} is missing something"
   loop: "{{lvm_plain}}"
+  loop_control:
+    label: "volume - {{item.mnt}}"
   failed_when: >-
     item.size|default('') == '' or
     item.size|float == 0
 
-- name: "check if mounted first"
+- name: "check whether plain volume is already mounted"
   fail:
     msg: "{{item.mnt}} not mounted"
   register: mnt_check
@@ -16,23 +18,29 @@
   failed_when: >-
     '/mnt/' + item.mnt not in ansible_facts['mounts'] | map(attribute='mount')
   loop: "{{lvm_plain}}"
+  loop_control:
+    label: "volume - {{item.mnt}}"
 
-- name: "no shrink only grow"
+- name: "refuse to shrink an existing plain volume"
   fail:
     msg: "checking sizes of {{item.mnt}}"
   loop: "{{lvm_plain}}"
+  loop_control:
+    label: "volume - {{item.mnt}}"
   failed_when: >-
     item.mnt in ansible_facts['lvm']['lvs'] and
     (ansible_facts['lvm']['lvs'][item.mnt]['size_g'])|float
       > item.size|float
 
-- name: "cannot change volume group"
+- name: "refuse to move a plain volume between volume groups"
   fail:
-    msg: "checking volume gruop for {{item.mnt}}"
+    msg: "checking volume group for {{item.mnt}}"
   failed_when: >-
     item.mnt in ansible_facts['lvm']['lvs'] and
     ansible_facts['lvm']['lvs'][item.mnt]['vg'] != vg
   loop: "{{lvm_plain}}"
+  loop_control:
+    label: "volume - {{item.mnt}}"
 
 - name: "ensure plain logical volume"
   lvol:
@@ -41,13 +49,17 @@
     vg: "{{vg}}"
     shrink: false
   loop: "{{lvm_plain}}"
+  loop_control:
+    label: "volume - {{item.mnt}}"
 
-- name: "ensure fs"
+- name: "ensure ext4 filesystem on plain volume"
   filesystem:
     dev: "/dev/{{vg}}/{{item.mnt}}"
     fstype: "ext4"
     resizefs: true
   loop: "{{lvm_plain}}"
+  loop_control:
+    label: "volume - {{item.mnt}}"
 
 - name: "mount plain filesystem"
   mount:
@@ -57,3 +69,5 @@
     src: "/dev/{{vg}}/{{item.item.mnt}}"
     state: "mounted"
   loop: "{{mnt_check.results}}"
+  loop_control:
+    label: "volume - {{item.item.mnt}}"

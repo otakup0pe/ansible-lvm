@@ -42,10 +42,24 @@ This is a list of YAML objects representing logical volumes. Each entry _must_ h
 
 * `mnt` the location to mount the volume.
 * `size` in a format that LVM can understand.
-* `vg` is the volume group specified in 
+* `vg` is the volume group specified in
 * `name` a friendly name for the mountpoint
 
 The `lvm_encfs` object _must_ also have a `key` value. Keys will receive a `.key` suffix and searched for under `lvm_key_source`.
+
+# VG-Free Prometheus Metrics
+
+Optionally, the role can install a small collector that exports LVM
+volume-group free/total space as a Prometheus
+[textfile collector](https://github.com/prometheus/node_exporter#textfile-collector)
+`.prom` file. This is disabled by default, set `lvm_metrics_enabled` to `true` to enable.
+
+Exported metrics:
+
+* `lvm_vg_free_bytes{vg="..."}` -- free space in the volume group.
+* `lvm_vg_size_bytes{vg="..."}` -- total size of the volume group.
+* `lvm_metrics_scrape_success` -- `1` if the collector ran cleanly, `0` on error.
+* `lvm_metrics_last_run_timestamp` -- unix timestamp of the last run.
 
 # License
 

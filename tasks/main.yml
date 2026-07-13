@@ -17,3 +17,6 @@
 - include_tasks: "encfs.yml"
 
 - include_tasks: "plain.yml"
+
+- include_tasks: "metrics.yml"
+  when: lvm_metrics_enabled | bool

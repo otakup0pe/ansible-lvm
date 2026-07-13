@@ -1,0 +1,34 @@
+---
+- name: "install lvm vg-free metrics collector script"
+  copy:
+    src: "lvm-vg-metrics.sh"
+    dest: "{{lvm_metrics_script_dest}}"
+    mode: "0755"
+    owner: "root"
+    group: "root"
+
+- name: "ensure lvm vg-free metrics textfile directory exists"
+  file:
+    path: "{{lvm_metrics_textfile_dir}}"
+    state: "directory"
+
+- name: "install lvm vg-free metrics systemd service"
+  template:
+    src: "lvm-vg-metrics.service.j2"
+    dest: "/etc/systemd/system/lvm-vg-metrics.service"
+    mode: "0644"
+  notify: "reload systemd for lvm metrics"
+
+- name: "install lvm vg-free metrics systemd timer"
+  template:
+    src: "lvm-vg-metrics.timer.j2"
+    dest: "/etc/systemd/system/lvm-vg-metrics.timer"
+    mode: "0644"
+  notify: "reload systemd for lvm metrics"
+
+- name: "enable and start lvm vg-free metrics timer"
+  systemd:
+    name: "lvm-vg-metrics.timer"
+    enabled: true
+    state: "started"
+    daemon_reload: true
