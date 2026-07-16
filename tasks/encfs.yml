@@ -58,7 +58,11 @@
     src: "{{lvm_key_source}}/{{item.item.key}}.key"
     dest: "{{lvm_key_dest}}/{{item.item.key}}"
     mode: "0600"
-  when: item.failed_when_result
+  when: >-
+    item.failed_when_result or (
+      item.item.mnt + '-' + lvm_crypt_suffix in ansible_facts['lvm']['lvs'] and
+      item.item.size|float != ansible_facts['lvm']['lvs'][item.item.mnt + '-' + lvm_crypt_suffix]['size_g']|float
+    )
   loop: "{{mnt_check.results}}"
   no_log: true
   loop_control:
@@ -78,7 +82,7 @@
 - name: "resize luks if needed"
   shell: >-
     cryptsetup resize
-    --key-file={{lvm_key_dest}}/{{item.key}}.key {{item.mnt}}
+    --key-file={{lvm_key_dest}}/{{item.key}} {{item.mnt}}
   loop: "{{lvm_encfs}}"
   loop_control:
     label: "volume - {{item.mnt}}"
