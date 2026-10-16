@@ -7,12 +7,14 @@ lvm_encfs: []
 #   key: asdd
 lvm_plain: []
 lvm_crypt_suffix: 'crypto'
-lvm_key_source: "{{dotfiles}}"
+lvm_key_source: "{{ playbook_dir }}/files"
 lvm_key_dest: "/var/cache/ansible-lvm"
 lvm_default_mnt_prefix: "/mnt"
-lvm_new: false
-# vg-free prometheus textfile metrics (optional, off by default)
 lvm_metrics_enabled: false
 lvm_metrics_textfile_dir: "/var/lib/node_exporter/textfile_collector"
 lvm_metrics_script_dest: "/usr/local/bin/lvm-vg-metrics.sh"
 lvm_metrics_interval: "5min"
+lvm_metrics_expectations_dir: "/etc/lvm-vg-metrics.d"
+lvm_metrics_expected_vgs: "{{ [vg] }}"
+lvm_metrics_expected_plain_lvs: "{{ lvm_plain }}"
+lvm_metrics_expected_encrypted_lvs: "{{ lvm_encfs }}"

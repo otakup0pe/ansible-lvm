@@ -1,12 +1,25 @@
 ---
 galaxy_info:
-  author: Jonathan Freedman
-  license: MIT
-  galaxy_tags:
-  - system
-  min_ansible_version: 2.3
+  role_name: "lvm"
+  namespace: "otakup0pe"
+  author: "Jonathan Freedman"
+  description: "Create LUKS encrypted and plain LVM logical volumes"
+  license: "MIT"
+  min_ansible_version: "2.12"
   platforms:
-  - name: Ubuntu
-    versions:
-    - all
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy
+        - noble
+    - name: Debian
+      versions:
+        - bookworm
+        - trixie
+  galaxy_tags:
+    - system
+    - lvm
+    - luks
+    - storage
+
 dependencies: []

@@ -1,34 +1,68 @@
 ---
-- name: "install lvm vg-free metrics collector script"
-  copy:
+- name: "require a volume group for metrics"
+  ansible.builtin.assert:
+    that: "vg | default('') | length > 0"
+    fail_msg: >-
+      lvm_metrics_enabled requires vg to be set -- the expectation fragment
+      is named after it, so without it no expectations are ever published.
+
+- name: "install lvm metrics collector script"
+  ansible.builtin.copy:
     src: "lvm-vg-metrics.sh"
-    dest: "{{lvm_metrics_script_dest}}"
+    dest: "{{ lvm_metrics_script_dest }}"
     mode: "0755"
     owner: "root"
     group: "root"
 
-- name: "ensure lvm vg-free metrics textfile directory exists"
-  file:
-    path: "{{lvm_metrics_textfile_dir}}"
+- name: "ensure lvm metrics textfile directory exists"
+  ansible.builtin.file:
+    path: "{{ lvm_metrics_textfile_dir }}"
     state: "directory"
+    mode: "0755"
 
-- name: "install lvm vg-free metrics systemd service"
-  template:
+- name: "ensure lvm metrics expectations directory exists"
+  ansible.builtin.file:
+    path: "{{ lvm_metrics_expectations_dir }}"
+    state: "directory"
+    mode: "0755"
+    owner: "root"
+    group: "root"
+
+- name: "install lvm metrics expectations"
+  ansible.builtin.template:
+    src: "lvm-vg-metrics-expectations.conf.j2"
+    dest: "{{ lvm_metrics_expectations_dir }}/{{ vg }}.conf"
+    mode: "0644"
+    owner: "root"
+    group: "root"
+
+- name: "install lvm metrics systemd service"
+  ansible.builtin.template:
     src: "lvm-vg-metrics.service.j2"
     dest: "/etc/systemd/system/lvm-vg-metrics.service"
     mode: "0644"
-  notify: "reload systemd for lvm metrics"
 
-- name: "install lvm vg-free metrics systemd timer"
-  template:
+- name: "install lvm metrics systemd timer"
+  ansible.builtin.template:
     src: "lvm-vg-metrics.timer.j2"
     dest: "/etc/systemd/system/lvm-vg-metrics.timer"
     mode: "0644"
-  notify: "reload systemd for lvm metrics"
+  register: lvm_metrics_timer_unit
 
-- name: "enable and start lvm vg-free metrics timer"
-  systemd:
+- name: "enable and start lvm metrics timer"
+  ansible.builtin.systemd:
     name: "lvm-vg-metrics.timer"
     enabled: true
     state: "started"
     daemon_reload: true
+  register: lvm_metrics_timer_started
+
+# daemon-reload above picks up a changed service unit; the timer needs an
+# explicit restart to re-arm on a new interval.
+- name: "restart lvm metrics timer"
+  ansible.builtin.systemd:
+    name: "lvm-vg-metrics.timer"
+    state: "restarted"
+  when:
+    not lvm_metrics_timer_started.changed | default(false)
+    and lvm_metrics_timer_unit.changed | default(false)

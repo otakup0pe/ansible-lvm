@@ -1,6 +1,6 @@
 ---
 - name: "validate plain volume definition"
-  fail:
+  ansible.builtin.fail:
     msg: "{{item.mnt}} is missing something"
   loop: "{{lvm_plain}}"
   loop_control:
@@ -10,19 +10,20 @@
     item.size|float == 0
 
 - name: "check whether plain volume is already mounted"
-  fail:
+  ansible.builtin.fail:
     msg: "{{item.mnt}} not mounted"
   register: mnt_check
   ignore_errors: true
   changed_when: false
   failed_when: >-
-    '/mnt/' + item.mnt not in ansible_facts['mounts'] | map(attribute='mount')
+    (item.mnt_prefix | default(lvm_default_mnt_prefix)) + '/' + item.mnt
+    not in ansible_facts['mounts'] | map(attribute='mount')
   loop: "{{lvm_plain}}"
   loop_control:
     label: "volume - {{item.mnt}}"
 
 - name: "refuse to shrink an existing plain volume"
-  fail:
+  ansible.builtin.fail:
     msg: "checking sizes of {{item.mnt}}"
   loop: "{{lvm_plain}}"
   loop_control:
@@ -33,7 +34,7 @@
       > item.size|float
 
 - name: "refuse to move a plain volume between volume groups"
-  fail:
+  ansible.builtin.fail:
     msg: "checking volume group for {{item.mnt}}"
   failed_when: >-
     item.mnt in ansible_facts['lvm']['lvs'] and
@@ -43,7 +44,7 @@
     label: "volume - {{item.mnt}}"
 
 - name: "ensure plain logical volume"
-  lvol:
+  community.general.lvol:
     lv: "{{item.mnt}}"
     size: "{{item.size}}G"
     vg: "{{vg}}"
@@ -53,7 +54,7 @@
     label: "volume - {{item.mnt}}"
 
 - name: "ensure ext4 filesystem on plain volume"
-  filesystem:
+  community.general.filesystem:
     dev: "/dev/{{vg}}/{{item.mnt}}"
     fstype: "ext4"
     resizefs: true
@@ -62,7 +63,7 @@
     label: "volume - {{item.mnt}}"
 
 - name: "mount plain filesystem"
-  mount:
+  ansible.posix.mount:
     boot: false
     fstype: "ext4"
     path: "{{item.item.mnt_prefix|default(lvm_default_mnt_prefix)}}/{{item.item.mnt}}"

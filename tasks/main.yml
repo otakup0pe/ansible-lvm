@@ -1,6 +1,6 @@
 ---
 - name: "create key file location"
-  file:
+  ansible.builtin.file:
     path: "{{lvm_key_dest}}"
     state: "directory"
     mode: "0400"
@@ -8,15 +8,15 @@
     group: "root"
 
 - name: "create volume group and associate physical volumes"
-  lvg:
+  community.general.lvg:
     state: "present"
     vg: "{{vg}}"
     pvs: "{{pv}}"
   when: pv|default('') != ''
 
-- include_tasks: "encfs.yml"
+- ansible.builtin.include_tasks: "encfs.yml"
 
-- include_tasks: "plain.yml"
+- ansible.builtin.include_tasks: "plain.yml"
 
-- include_tasks: "metrics.yml"
+- ansible.builtin.include_tasks: "metrics.yml"
   when: lvm_metrics_enabled | bool

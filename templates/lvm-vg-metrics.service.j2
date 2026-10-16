@@ -5,4 +5,4 @@ After=local-fs.target
 
 [Service]
 Type=oneshot
-ExecStart={{ lvm_metrics_script_dest }} {{ lvm_metrics_textfile_dir }}
+ExecStart={{ lvm_metrics_script_dest }} {{ lvm_metrics_textfile_dir }} {{ lvm_metrics_expectations_dir }}

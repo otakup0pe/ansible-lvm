@@ -1,0 +1,11 @@
+# {{ ansible_managed }}
+{% for expected_vg in lvm_metrics_expected_vgs | unique | sort %}
+vg {{ expected_vg }}
+{% endfor %}
+{% for volume in lvm_metrics_expected_plain_lvs %}
+lv {{ volume.vg | default(vg) }} {{ volume.mnt }}
+{% endfor %}
+{% for volume in lvm_metrics_expected_encrypted_lvs %}
+lv {{ volume.vg | default(vg) }} {{ volume.mnt }}-{{ lvm_crypt_suffix }}
+mapper {{ volume.vg | default(vg) }} {{ volume.mnt }}-{{ lvm_crypt_suffix }} {{ volume.mnt }}
+{% endfor %}
