@@ -1,0 +1,31 @@
+---
+- name: Cleanup
+  hosts: all
+  become: true
+  gather_facts: false
+  ignore_unreachable: true
+  tasks:
+    - name: Remove test storage
+      ansible.builtin.raw: |
+        for path in /srv/encrypted /srv/plain; do
+          if mountpoint --quiet "$path" 2>/dev/null; then
+            umount "$path" || true
+          fi
+        done
+        if command -v cryptsetup >/dev/null 2>&1 &&
+            cryptsetup status encrypted >/dev/null 2>&1; then
+          cryptsetup close encrypted || true
+        fi
+        if command -v vgremove >/dev/null 2>&1; then
+          vgremove --force --yes molecule_vg >/dev/null 2>&1 || true
+        fi
+        if test -s /var/lib/molecule-lvm/pv-device; then
+          molecule_lvm_pv="$(cat /var/lib/molecule-lvm/pv-device)"
+          if command -v pvremove >/dev/null 2>&1; then
+            pvremove --force --force --yes "$molecule_lvm_pv" >/dev/null 2>&1 || true
+          fi
+          losetup --detach "$molecule_lvm_pv" >/dev/null 2>&1 || true
+        fi
+        rm -rf /var/lib/molecule-lvm
+      changed_when: true
+      failed_when: false

@@ -1,0 +1,32 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  gather_facts: true
+  pre_tasks:
+    - name: Read test physical volume
+      ansible.builtin.slurp:
+        src: /var/lib/molecule-lvm/pv-device
+      register: molecule_lvm_pv_file
+
+    - name: Set test physical volume
+      ansible.builtin.set_fact:
+        molecule_lvm_pv: "{{ molecule_lvm_pv_file.content | b64decode | trim }}"
+
+  vars:
+    vg: molecule_vg
+    pv: "{{ molecule_lvm_pv }}"
+    lvm_key_source: "{{ lookup('env', 'MOLECULE_SCENARIO_DIRECTORY') }}/files"
+    lvm_plain:
+      - mnt: plain
+        mnt_prefix: /srv
+        size: "1"
+    lvm_encfs:
+      - mnt: encrypted
+        mnt_prefix: /srv
+        size: "1"
+        key: molecule
+        boot: false
+    lvm_metrics_enabled: true
+  roles:
+    - role: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') | basename }}"

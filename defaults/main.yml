@@ -9,6 +9,7 @@ lvm_plain: []
 lvm_crypt_suffix: 'crypto'
 lvm_key_source: "{{ playbook_dir }}/files"
 lvm_key_dest: "/var/cache/ansible-lvm"
+lvm_key_dest_mode: "0400"
 lvm_default_mnt_prefix: "/mnt"
 lvm_metrics_enabled: false
 lvm_metrics_textfile_dir: "/var/lib/node_exporter/textfile_collector"

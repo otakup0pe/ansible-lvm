@@ -1,0 +1,14 @@
+---
+profile: min
+
+exclude_paths:
+  - .cache/
+  - .github/
+  - .venv/
+  - molecule/*/tests/
+
+offline: false
+
+warn_list:
+  - experimental
+  - yaml[truthy]

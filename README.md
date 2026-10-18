@@ -7,6 +7,16 @@ I've had various incantations of this over the past few years for side projects,
 
 The role is entirely variable driven. You can simply include the role and pass in variables and it will handle the rest. The following example would setup two one gig logical volumes, with one being encrypted.
 
+# Requirements
+
+Install the `community.general`, `community.crypto`, and `ansible.posix`
+collections on the controller. No extra controller-side Python package is
+required for `community.crypto.luks_device`.
+
+Managed hosts need `lvm2`, `cryptsetup`, `util-linux` (for `lsblk` and
+`wipefs`), and `e2fsprogs`. This role configures storage but does not install
+those system packages.
+
 ```
 - role: lvm
   pv: "/dev/sdb"
@@ -24,7 +34,7 @@ That mounts `/mnt/encrypted` and `/mnt/clear`.
 
 # Note About Crypto
 
-The LUKS key is intentionally _not_ stored on hosts. This implies running `ansible-playbook` on hosts after they have been brought back up. The thought is to move the key into a Hashicorp Vault instance and then pull it in with an Ansible lookup module. The key must be accessible on the executing workstation.
+The LUKS key is intentionally _not_ retained on hosts. The role stages it only while opening or resizing an encrypted volume and removes it even when that work fails. By default, encrypted volumes therefore need another `ansible-playbook` run after reboot. The key must be accessible on the executing workstation.
 
 # Attributes
 
@@ -33,7 +43,8 @@ The LUKS key is intentionally _not_ stored on hosts. This implies running `ansib
   use a volume group that already exists.
 * `lvm_crypt_suffix` is the suffix to append to the intermediary encrypted volume.
 * `lvm_key_source` dictates where to look for keys.
-* `lvm_key_dest` dictates where to cache keys during runtime.
+* `lvm_key_dest` dictates where to stage keys during provisioning.
+* `lvm_key_dest_mode` controls that directory mode and defaults to the existing `0400` behavior.
 * `lvm_default_mnt_prefix` is the directory volumes mount under. Defaults to `/mnt`.
 
 ## `lvm_encfs` and `lvm_plain`

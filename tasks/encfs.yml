@@ -54,43 +54,54 @@
   loop_control:
     label: "volume - {{item.mnt}}"
 
-- name: "copy luks key for encrypted volume"
-  ansible.builtin.copy:
-    src: "{{lvm_key_source}}/{{item.item.key}}.key"
-    dest: "{{lvm_key_dest}}/{{item.item.key}}"
-    mode: "0600"
-  when: >-
-    item.failed_when_result or (
-      item.item.mnt + '-' + lvm_crypt_suffix in ansible_facts['lvm']['lvs'] and
-      item.item.size|float != ansible_facts['lvm']['lvs'][item.item.mnt + '-' + lvm_crypt_suffix]['size_g']|float
-    )
-  loop: "{{mnt_check.results}}"
-  no_log: true
-  loop_control:
-    label: "volume - {{item.item.mnt}}"
+- name: "open or resize encrypted volumes"
+  block:
+    - name: "copy luks key for encrypted volume"
+      ansible.builtin.copy:
+        src: "{{lvm_key_source}}/{{item.item.key}}.key"
+        dest: "{{lvm_key_dest}}/{{item.item.key}}"
+        mode: "0600"
+      when: >-
+        item.failed_when_result or (
+          item.item.mnt + '-' + lvm_crypt_suffix in ansible_facts['lvm']['lvs'] and
+          item.item.size|float != ansible_facts['lvm']['lvs'][item.item.mnt + '-' + lvm_crypt_suffix]['size_g']|float
+        )
+      loop: "{{mnt_check.results}}"
+      no_log: true
+      loop_control:
+        label: "volume - {{item.item.mnt}}"
 
-- name: "open luks device for encrypted volume"
-  community.crypto.luks_device:
-    device: "/dev/{{vg}}/{{item.item.mnt}}-{{lvm_crypt_suffix}}"
-    keyfile: "{{lvm_key_dest}}/{{item.item.key}}"
-    name: "{{item.item.mnt}}"
-    state: "opened"
-  loop: "{{mnt_check.results}}"
-  when: item.failed_when_result
-  loop_control:
-    label: "volume - {{item.item.mnt}}"
+    - name: "open luks device for encrypted volume"
+      community.crypto.luks_device:
+        device: "/dev/{{vg}}/{{item.item.mnt}}-{{lvm_crypt_suffix}}"
+        keyfile: "{{lvm_key_dest}}/{{item.item.key}}"
+        name: "{{item.item.mnt}}"
+        state: "opened"
+      loop: "{{mnt_check.results}}"
+      when: item.failed_when_result
+      loop_control:
+        label: "volume - {{item.item.mnt}}"
 
-- name: "resize luks if needed"
-  ansible.builtin.shell: >-
-    cryptsetup resize
-    --key-file={{lvm_key_dest}}/{{item.key}} {{item.mnt}}
-  loop: "{{lvm_encfs}}"
-  loop_control:
-    label: "volume - {{item.mnt}}"
-  when: >-
-    item.mnt + '-' + lvm_crypt_suffix in ansible_facts['lvm']['lvs']
-    and item.size|float != (ansible_facts['lvm']['lvs']
-      [item.mnt + '-' + lvm_crypt_suffix]['size_g'])|float
+    - name: "resize luks if needed"
+      ansible.builtin.shell: >-
+        cryptsetup resize
+        --key-file={{lvm_key_dest}}/{{item.key}} {{item.mnt}}
+      loop: "{{lvm_encfs}}"
+      loop_control:
+        label: "volume - {{item.mnt}}"
+      when: >-
+        item.mnt + '-' + lvm_crypt_suffix in ansible_facts['lvm']['lvs']
+        and item.size|float != (ansible_facts['lvm']['lvs']
+          [item.mnt + '-' + lvm_crypt_suffix]['size_g'])|float
+  always:
+    - name: "remove luks key from disk"
+      ansible.builtin.file:
+        path: "{{lvm_key_dest}}/{{item.key}}"
+        state: absent
+      loop: "{{lvm_encfs}}"
+      no_log: true
+      loop_control:
+        label: "volume - {{item.mnt}}"
 
 - name: "ensure ext4 filesystem on encrypted volume"
   community.general.filesystem:
@@ -121,10 +132,3 @@
   loop_control:
     label: "volume - {{item.item.mnt}}"
 
-- name: "remove luks key from disk"
-  ansible.builtin.file:
-    path: "{{lvm_key_dest}}/{{item.key}}"
-    state: absent
-  loop: "{{lvm_encfs}}"
-  loop_control:
-    label: "volume - {{item.mnt}}"

@@ -1,0 +1,6 @@
+.venv/
+.act/
+molecule-*.log
+__pycache__/
+*.pyc
+.ansible/

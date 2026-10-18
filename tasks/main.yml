@@ -3,7 +3,7 @@
   ansible.builtin.file:
     path: "{{lvm_key_dest}}"
     state: "directory"
-    mode: "0400"
+    mode: "{{ lvm_key_dest_mode }}"
     owner: "root"
     group: "root"
 
