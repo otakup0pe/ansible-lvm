@@ -124,6 +124,7 @@
   ansible.posix.mount:
     boot: "{{ item.item.boot | default(true) }}"
     fstype: "ext4"
+    opts: "{{ item.item.mount_opts | default(omit) }}"
     path: "{{item.item.mnt_prefix|default(lvm_default_mnt_prefix)}}\
     /{{item.item.mnt}}"
     src: "/dev/mapper/{{item.item.mnt}}"

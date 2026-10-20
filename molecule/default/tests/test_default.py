@@ -17,6 +17,12 @@ def test_encrypted_volume_is_open_without_staged_key(host):
     assert not host.file("/var/cache/ansible-lvm/molecule").exists
 
 
+def test_encrypted_volume_can_be_excluded_from_local_filesystems(host):
+    result = host.run("systemctl show --property=Before --value srv-encrypted.mount")
+    assert result.rc == 0
+    assert "local-fs.target" not in set(result.stdout.split())
+
+
 def test_metrics_timer_and_output(host):
     assert host.run("systemctl is-enabled lvm-vg-metrics.timer").stdout.strip() == "enabled"
     assert host.run("systemctl is-active lvm-vg-metrics.timer").stdout.strip() == "active"

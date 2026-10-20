@@ -27,6 +27,7 @@
         size: "1"
         key: molecule
         boot: false
+        mount_opts: nofail
     lvm_metrics_enabled: true
   roles:
     - role: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') | basename }}"

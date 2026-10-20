@@ -61,6 +61,10 @@ Each entry _may_ also have:
   `lvm_default_mnt_prefix`.
 * `boot` to control whether the volume mounts at boot. `lvm_encfs` entries
   default to `true`; `lvm_plain` entries are always `false` and ignore this.
+* `mount_opts` to set filesystem mount options for an encrypted volume. It is
+  omitted by default, preserving `ansible.posix.mount` defaults. Use `nofail`
+  with `boot: false` when another systemd unit owns activation and the mount
+  must stay outside the `local-fs.target` boot transaction.
 
 The `lvm_encfs` object _must_ also have a `key` value. Keys will receive a `.key` suffix and searched for under `lvm_key_source`.
 
