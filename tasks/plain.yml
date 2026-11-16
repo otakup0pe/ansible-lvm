@@ -62,13 +62,16 @@
   loop_control:
     label: "volume - {{item.mnt}}"
 
+# Preserve the historical plain-volume default; callers opt into boot ordering
+# per entry.
 - name: "mount plain filesystem"
   ansible.posix.mount:
-    boot: false
+    boot: "{{ item.item.boot | default(false) }}"
     fstype: "ext4"
+    opts: "{{ item.item.mount_opts | default(omit) }}"
     path: "{{item.item.mnt_prefix|default(lvm_default_mnt_prefix)}}/{{item.item.mnt}}"
     src: "/dev/{{vg}}/{{item.item.mnt}}"
-    state: "mounted"
+    state: "{{ item.item.mount_state | default('mounted') }}"
   loop: "{{mnt_check.results}}"
   loop_control:
     label: "volume - {{item.item.mnt}}"

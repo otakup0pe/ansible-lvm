@@ -6,6 +6,20 @@
       lvm_metrics_enabled requires vg to be set -- the expectation fragment
       is named after it, so without it no expectations are ever published.
 
+- name: "inspect lvm metrics textfile directory"
+  ansible.builtin.stat:
+    path: "{{ lvm_metrics_textfile_dir }}"
+  register: lvm_metrics_textfile_dir_stat
+
+- name: "require lvm metrics textfile directory"
+  ansible.builtin.assert:
+    that:
+      - lvm_metrics_textfile_dir_stat.stat.exists
+      - lvm_metrics_textfile_dir_stat.stat.isdir
+    fail_msg: >-
+      {{ lvm_metrics_textfile_dir }} must already exist and be a directory
+      when lvm_metrics_enabled is true.
+
 - name: "install lvm metrics collector script"
   ansible.builtin.copy:
     src: "lvm-vg-metrics.sh"
@@ -13,12 +27,6 @@
     mode: "0755"
     owner: "root"
     group: "root"
-
-- name: "ensure lvm metrics textfile directory exists"
-  ansible.builtin.file:
-    path: "{{ lvm_metrics_textfile_dir }}"
-    state: "directory"
-    mode: "0755"
 
 - name: "ensure lvm metrics expectations directory exists"
   ansible.builtin.file:

@@ -13,6 +13,14 @@
       ansible.builtin.set_fact:
         molecule_lvm_pv: "{{ molecule_lvm_pv_file.content | b64decode | trim }}"
 
+    - name: Create externally managed metrics directory
+      ansible.builtin.file:
+        path: /var/lib/node_exporter/textfile_collector
+        state: directory
+        owner: root
+        group: root
+        mode: "02775"
+
   vars:
     vg: molecule_vg
     pv: "{{ molecule_lvm_pv }}"
@@ -21,6 +29,14 @@
       - mnt: plain
         mnt_prefix: /srv
         size: "1"
+        boot: false
+        mount_opts: nofail
+        mount_state: present
+      - mnt: plainboot
+        mnt_prefix: /srv
+        size: "1"
+        boot: true
+        mount_opts: nofail
     lvm_encfs:
       - mnt: encrypted
         mnt_prefix: /srv

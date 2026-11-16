@@ -7,7 +7,7 @@
   tasks:
     - name: Remove test storage
       ansible.builtin.raw: |
-        for path in /srv/encrypted /srv/plain; do
+        for path in /srv/encrypted /srv/plain /srv/plainboot; do
           if mountpoint --quiet "$path" 2>/dev/null; then
             umount "$path" || true
           fi

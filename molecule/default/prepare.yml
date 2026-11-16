@@ -16,6 +16,17 @@
         cache_valid_time: 3600
       when: ansible_facts['os_family'] == "Debian"
 
+    - name: Expose loop devices inside the privileged fixture
+      ansible.builtin.shell:
+        cmd: |
+          test -c /dev/loop-control ||
+            mknod /dev/loop-control c 10 237
+          for minor in $(seq 0 255); do
+            test -b "/dev/loop${minor}" ||
+              mknod "/dev/loop${minor}" b 7 "${minor}"
+          done
+      changed_when: false
+
     - name: Let LVM manage device nodes in the container
       ansible.builtin.copy:
         dest: /etc/lvm/lvm.conf
@@ -26,6 +37,17 @@
               udev_sync = 0
           }
 
+    - name: Remove stale test volume group
+      ansible.builtin.command:
+        argv:
+          - vgremove
+          - --force
+          - --yes
+          - molecule_vg
+      register: molecule_stale_vg_removed
+      changed_when: molecule_stale_vg_removed.rc == 0
+      failed_when: false
+
     - name: Ensure test storage directory exists
       ansible.builtin.file:
         path: /var/lib/molecule-lvm
@@ -34,7 +56,7 @@
 
     - name: Create sparse physical-volume image
       ansible.builtin.command:
-        cmd: truncate --size 3G /var/lib/molecule-lvm/pv.img
+        cmd: truncate --size 3076M /var/lib/molecule-lvm/pv.img
         creates: /var/lib/molecule-lvm/pv.img
 
     - name: Find attached test loop device

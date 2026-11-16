@@ -128,7 +128,7 @@
     path: "{{item.item.mnt_prefix|default(lvm_default_mnt_prefix)}}\
     /{{item.item.mnt}}"
     src: "/dev/mapper/{{item.item.mnt}}"
-    state: "mounted"
+    state: "{{ item.item.mount_state | default('mounted') }}"
   loop: "{{mnt_check.results}}"
   loop_control:
     label: "volume - {{item.item.mnt}}"
